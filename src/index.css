@@ -1,0 +1,52 @@
+/* Self-hosted variable font — no render-blocking external request. */
+@import '@fontsource-variable/inter-tight';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colors are declared as variables so a light theme can be added later
+     by overriding this block (e.g. under [data-theme='light']) with no
+     component or utility-class changes. Dark theme only for now. */
+  --color-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #a1a1a1;
+  /* Spec value is #6E6E6E, but that clears only ~3.9:1 on the near-black
+     background. Lifted to #7C7C7C (~4.75:1) to meet WCAG AA for small text. */
+  --color-text-muted: #7c7c7c;
+  --color-accent: #8b7ff0;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-bg text-primary font-sans antialiased;
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Visible keyboard focus ring for every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Respect reduced-motion: neutralize transitions/animations globally. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
