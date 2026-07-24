@@ -41,9 +41,10 @@ export default function ProjectDetail() {
       <Layout>
         <main className="pt-12 md:pt-16">
           {/* Back link */}
+          {/* -my-3 keeps the visual position while giving a 44px hit area. */}
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-[14px] text-muted transition-colors duration-150 hover:text-primary"
+            className="-my-3 inline-flex min-h-[44px] items-center gap-1.5 py-3 text-[14px] text-muted transition-colors duration-150 hover:text-primary"
           >
             <ArrowLeft size={15} strokeWidth={1.75} aria-hidden="true" />
             Projects
@@ -71,7 +72,7 @@ export default function ProjectDetail() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-[13px] text-primary transition-colors duration-150 hover:border-accent hover:text-accent"
+                      className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-border px-4 py-2.5 text-[13px] text-primary transition-colors duration-150 hover:border-accent hover:text-accent"
                     >
                       <Icon size={15} strokeWidth={1.75} aria-hidden="true" />
                       {link.label}
@@ -150,7 +151,7 @@ export default function ProjectDetail() {
           >
             <Link
               to={`/projects/${prev.slug}`}
-              className="group flex flex-col items-start gap-1 text-left"
+              className="group flex min-w-0 flex-col items-start gap-1 text-left"
             >
               <span className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.06em] text-muted">
                 <ArrowLeft
@@ -168,7 +169,7 @@ export default function ProjectDetail() {
 
             <Link
               to={`/projects/${next.slug}`}
-              className="group flex flex-col items-end gap-1 text-right"
+              className="group flex min-w-0 flex-col items-end gap-1 text-right"
             >
               <span className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.06em] text-muted">
                 Next

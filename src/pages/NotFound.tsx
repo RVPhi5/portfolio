@@ -19,7 +19,7 @@ export default function NotFound() {
           </h1>
           <Link
             to="/"
-            className="mt-6 text-[15px] text-accent underline-offset-4 hover:underline"
+            className="mt-4 inline-flex min-h-[44px] items-center text-[15px] text-accent underline-offset-4 hover:underline"
           >
             ← Back home
           </Link>

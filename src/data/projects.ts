@@ -19,46 +19,6 @@ export type Project = {
 // links once each repository is public.
 export const projects: Project[] = [
   {
-    slug: 'pvdx-cubesat',
-    title: 'PVDX CubeSat',
-    stackSummary: 'Embedded C · FreeRTOS',
-    category: 'Flight software',
-    dates: '2025–present',
-    tagline:
-      'Real-time flight software for a student-built CubeSat launching in 2027, running on a radiation-hardened microcontroller.',
-    // media intentionally undefined — placeholder renders until an asset is added.
-    links: [
-      // TODO: point at the real PVDX repository.
-      { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },
-    ],
-    tags: ['C/C++', 'FreeRTOS', 'NASA cFS', 'CFDP'],
-    highlights: [
-      { value: '0.1→97%', label: 'bit-flip reliability' },
-      { value: '2027', label: 'launch year' },
-    ],
-    sections: [
-      {
-        heading: 'Overview',
-        paragraphs: [
-          'PVDX is a CubeSat developed by Brown Space Engineering. Rohan works on the flight software core: the code that runs the satellite autonomously in orbit, out of contact with the ground.',
-        ],
-      },
-      {
-        heading: 'What I built',
-        paragraphs: [
-          'An autonomous fault-detection and recovery system that distinguishes transient bit-flips from permanent hardware failures, with a persistent "dead list" in MRAM so the command dispatcher routes around faulty components across reboots.',
-          'A triplicated bootloader with checksums took bit-flip reliability from 0.1% to 97%. Watchdog recovery logic was verified against 100% of simulated corruption events using a custom fault-injection tool.',
-        ],
-      },
-      {
-        heading: 'Technical details',
-        paragraphs: [
-          'Built on a 7-stage deterministic state machine covering the full mission lifecycle. Static allocation throughout to avoid heap fragmentation in flight, and a "no infinite loops" standard to guarantee deterministic real-time behavior.',
-        ],
-      },
-    ],
-  },
-  {
     slug: 'tcp-ip-stack',
     title: 'Userspace TCP/IP Stack',
     stackSummary: 'Go · concurrent systems',

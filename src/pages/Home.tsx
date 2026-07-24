@@ -21,19 +21,11 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Headline */}
-          <h1 className="mt-14 max-w-[620px] text-[30px] font-semibold leading-[1.08] tracking-[-0.02em] text-primary md:text-[44px]">
-            Software engineer working in flight systems, networking, and ML.
-          </h1>
-
-          {/* Subheadline */}
-          <p className="mt-6 max-w-[460px] text-[16px] leading-[1.6] text-secondary">
-            Currently building flight software for a CubeSat launching in 2027
-            and interning at Mirico.
-          </p>
+          {/* Visually-hidden page heading — keeps one h1 for a11y/SEO. */}
+          <h1 className="sr-only">Rohan Vittal — Projects</h1>
 
           {/* Divider */}
-          <hr className="my-10 border-0 border-t border-border" />
+          <hr className="mb-10 mt-12 border-0 border-t border-border" />
 
           {/* Project list */}
           <section aria-label="Projects">

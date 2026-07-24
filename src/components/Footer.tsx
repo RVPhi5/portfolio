@@ -26,13 +26,14 @@ export default function Footer() {
   return (
     <footer className="mt-24 flex items-center justify-between border-t border-border py-8 text-[13px] text-muted">
       <span>© 2026 Rohan Vittal</span>
-      <nav className="flex items-center gap-4" aria-label="Social links">
+      {/* -mr-3 pulls the last icon's 44px hit-box flush with the content edge. */}
+      <nav className="-mr-3 flex items-center" aria-label="Social links">
         {socials.map(({ label, href, icon: Icon, external }) => (
           <a
             key={label}
             href={href}
             aria-label={label}
-            className="text-muted transition-colors duration-150 hover:text-primary"
+            className="flex h-11 w-11 items-center justify-center text-muted transition-colors duration-150 hover:text-primary"
             {...(external
               ? { target: '_blank', rel: 'noopener noreferrer' }
               : {})}
