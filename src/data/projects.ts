@@ -19,6 +19,46 @@ export type Project = {
 // links once each repository is public.
 export const projects: Project[] = [
   {
+    slug: 'coursetrees',
+    title: 'CourseTrees',
+    stackSummary: 'Next.js · Supabase · Postgres',
+    category: 'Full-stack',
+    dates: '2026',
+    tagline:
+      'A course-planning platform mapping prerequisite graphs, grades, and professor ratings across 150+ universities.',
+    links: [
+      { label: 'Visit site', href: 'https://coursetrees.com', icon: 'external' },
+    ],
+    tags: ['Next.js', 'TypeScript', 'Supabase', 'Postgres', 'Cytoscape', 'Python'],
+    highlights: [
+      { value: '150+', label: 'universities covered' },
+      { value: '390K+', label: 'courses indexed' },
+    ],
+    sections: [
+      {
+        heading: 'Overview',
+        paragraphs: [
+          'CourseTrees turns a university course catalog into something you can actually navigate: an interactive prerequisite graph layered with grade distributions, professor ratings, and degree requirements, covering 150+ schools.',
+        ],
+      },
+      {
+        heading: 'What I built',
+        paragraphs: [
+          'Interactive prerequisite graphs rendered with Cytoscape over roughly 400K courses and 400K+ dependency edges, with per-school theming and department filtering.',
+          'Python ingestion pipelines that scrape and normalize catalogs, offerings, and grade distributions from public university sources into a shared Postgres schema keyed by school.',
+          'A Next.js 15 App Router front end on Supabase, where every write goes through an atomic Postgres RPC and row-level security is the security boundary rather than the API layer.',
+        ],
+      },
+      {
+        heading: 'Making it scale',
+        paragraphs: [
+          'Aggregates like course stat bands and the professor ladder read from cron-refreshed materialized views instead of being computed per request, and public pages are served with incremental static regeneration.',
+          'Review and discussion feeds use keyset pagination on (created_at, id) cursors so deep pages cost the same as the first, and realtime subscriptions are opt-in per view so connection counts track engaged users rather than raw traffic.',
+        ],
+      },
+    ],
+  },
+  {
     slug: 'tcp-ip-stack',
     title: 'Userspace TCP/IP Stack',
     stackSummary: 'Go · concurrent systems',
