@@ -15,7 +15,7 @@ export default function Home() {
         <main className="pt-16 md:pt-24">
           {/* Header row */}
           <div className="flex items-baseline justify-between gap-4 text-[13px]">
-            <span className="font-medium text-primary">Rohan Vittal</span>
+            <span className="text-[16px] font-medium text-primary">Rohan Vittal</span>
             <span className="hidden text-muted sm:inline">
               Applied Math + CS · Brown '28
             </span>
