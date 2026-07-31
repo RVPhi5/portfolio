@@ -17,18 +17,15 @@ export default function Home() {
           <div className="flex items-baseline justify-between gap-4 text-[13px]">
             <span className="text-[16px] font-medium text-primary">Rohan Vittal</span>
             <span className="hidden text-muted sm:inline">
-              Applied Math + CS · Brown '28
+              Applied Math + CS · Brown
             </span>
           </div>
 
           {/* Visually-hidden page heading — keeps one h1 for a11y/SEO. */}
           <h1 className="sr-only">Rohan Vittal — Projects</h1>
 
-          {/* Divider */}
-          <hr className="mb-10 mt-12 border-0 border-t border-border" />
-
           {/* Project list */}
-          <section aria-label="Projects">
+          <section aria-label="Projects" className="mt-24">
             <ul className="border-b border-border">
               {projects.map((project, i) => (
                 <li key={project.slug}>
