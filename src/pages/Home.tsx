@@ -11,7 +11,7 @@ export default function Home() {
         title="Rohan Vittal — Software Engineer"
         description="Software engineer working in flight systems, networking, and ML. Currently building flight software for a CubeSat launching in 2027 and interning at Mirico."
       />
-      <Layout>
+      <Layout variant="split">
         <main className="pt-16 md:pt-24">
           {/* Header row */}
           <div className="flex items-baseline justify-between gap-4 text-[13px]">

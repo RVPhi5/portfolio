@@ -10,7 +10,10 @@ export const scenes: Scene[] = [
     id: 'placeholder',
     label: 'Placeholder cube',
     component: PlaceholderScene,
-    cameraPosition: [0, 0, 5],
+    // Pulled back from 5 so the cube's full diagonal clears the canvas edges:
+    // the stage is only half the viewport wide on lg+, and at 5 the cube was
+    // being clipped on all sides.
+    cameraPosition: [0, 0, 9],
   },
   // Real scenes get appended here later — adding one is a one-line edit + one new file.
 ];

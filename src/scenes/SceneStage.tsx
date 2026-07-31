@@ -63,7 +63,10 @@ export function SceneStage() {
   const frameloop = !pageVisible ? 'never' : reducedMotion ? 'demand' : 'always';
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+    // Right half of the viewport on large screens, where the split layout
+    // leaves space for it; full-bleed behind the content below `lg`, where
+    // there is no room for a side-by-side.
+    <div className="pointer-events-none fixed inset-0 z-0 lg:left-1/2" aria-hidden="true">
       <Canvas
         frameloop={frameloop}
         // Cap at 2: sharp on retina, without paying for 3x device ratios.
