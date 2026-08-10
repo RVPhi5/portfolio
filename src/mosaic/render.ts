@@ -7,8 +7,12 @@ import { PALETTE_HEX } from './config';
 export type Step = {
   from: Uint8Array; // 9
   to: Uint8Array; // 9
-  /** Base face letter: U, D, L, R or F. B never reaches here — it is invisible. */
-  face: 'U' | 'D' | 'L' | 'R' | 'F';
+  /**
+   * Base letter of a turn that shows on the front face: the four side layers,
+   * the two slices through the front, or F itself. B and S never reach here —
+   * neither touches a front facelet.
+   */
+  face: 'U' | 'D' | 'L' | 'R' | 'F' | 'M' | 'E';
   /** Signed quarter turns: 1, -1 or 2. */
   turns: number;
 };
@@ -76,10 +80,14 @@ function affects(face: Step['face'], index: number): boolean {
       return index < 3; // top row
     case 'D':
       return index > 5; // bottom row
+    case 'E':
+      return index > 2 && index < 6; // middle row — the slice between U and D
     case 'L':
       return index % 3 === 0; // left column
     case 'R':
       return index % 3 === 2; // right column
+    case 'M':
+      return index % 3 === 1; // middle column — the slice between L and R
     case 'F':
       return true; // the whole face turns as a unit
   }
@@ -149,7 +157,9 @@ export function drawStep(
   const squash = Math.abs(Math.cos(progress * Math.PI * (step.turns === 2 ? 2 : 1)));
   const swapped = progress >= 0.5;
   const shown = swapped ? step.to : step.from;
-  const horizontal = step.face === 'U' || step.face === 'D';
+  // U, D and the E slice all turn about the vertical axis, so their layer is a
+  // row and squashes in height; L, R and M squash in width.
+  const horizontal = step.face === 'U' || step.face === 'D' || step.face === 'E';
 
   for (let i = 0; i < 9; i++) {
     const col = i % 3;

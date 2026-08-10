@@ -1,4 +1,11 @@
 import Cube, { type CubeJson } from 'cubejs';
+import {
+  CENTRE_INDICES,
+  applyPerm,
+  rotationBetweenCentres,
+  type RotationElement,
+} from './moves';
+import { FACES } from './palette';
 
 let solverReady = false;
 
@@ -58,6 +65,49 @@ export function algBetween(from: CubeJson, to: CubeJson): string {
     throw new Error(`sequence "${alg}" does not carry from -> to`);
   }
   return alg;
+}
+
+/**
+ * The move sequence taking one colour state to another, with no requirement
+ * that they show the same centres.
+ *
+ * Kociemba only searches the face-turn group, where centres are the coordinate
+ * frame and therefore immovable. So the centre change is factored out first:
+ * rotate `from` until its centres agree with `to`'s — a rotation the cube can
+ * actually perform, since it expands into slice turns — and hand Kociemba the
+ * remainder, which is now an ordinary same-centre solve.
+ *
+ * The relabelling into cubejs's face alphabet is keyed off the shared centres,
+ * so it renames colours without moving anything: face letters still denote the
+ * same physical layers, and the returned algorithm applies as-is.
+ */
+export function algBetweenColorStates(
+  group: RotationElement[],
+  from: string,
+  to: string,
+): string {
+  const rotation = rotationBetweenCentres(group, from, to);
+  const rotated = applyPerm(from, rotation.perm);
+
+  const colorToLetter = new Map<string, string>();
+  CENTRE_INDICES.forEach((idx, face) => colorToLetter.set(rotated[idx], FACES[face]));
+
+  const relabel = (s: string) => {
+    let out = '';
+    for (const ch of s) {
+      const letter = colorToLetter.get(ch);
+      if (letter === undefined) throw new Error(`colour ${ch} has no centre to name it`);
+      out += letter;
+    }
+    return out;
+  };
+
+  const solved = algBetween(
+    Cube.fromString(relabel(rotated)).toJSON(),
+    Cube.fromString(relabel(to)).toJSON(),
+  );
+
+  return [rotation.alg, solved].filter(Boolean).join(' ');
 }
 
 export const moveCount = (alg: string): number => (alg.trim() === '' ? 0 : alg.trim().split(/\s+/).length);

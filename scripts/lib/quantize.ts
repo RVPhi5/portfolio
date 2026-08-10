@@ -93,44 +93,21 @@ export function isCubeCentre(x: number, y: number): boolean {
 }
 
 /**
- * Choose one centre colour per cube, shared by every mosaic.
+ * Map every pixel to its nearest palette colour with no error diffusion.
  *
- * Centres are immovable under face turns, so a cube shows the same centre
- * colour in every mosaic it ever displays. Picking the colour that minimises
- * total error against each mosaic's *source* pixel (before quantisation) keeps
- * the compromise as cheap as possible.
+ * For source art already drawn in the six cube colours this is exact: each
+ * sticker is already a palette colour, so "nearest" is itself, and skipping the
+ * dither avoids inventing error where there is none.
  */
-export function chooseSharedCentres(
-  sources: Array<Uint8Array | Uint8ClampedArray>,
+export function quantizeExact(
+  rgb: Uint8Array | Uint8ClampedArray,
   width: number,
   height: number,
-  gridCols: number,
-  gridRows: number,
-): ColorIndex[] {
-  const centres: ColorIndex[] = [];
-  for (let cy = 0; cy < gridRows; cy++) {
-    for (let cx = 0; cx < gridCols; cx++) {
-      const px = cx * STICKERS_PER_CUBE + 1;
-      const py = cy * STICKERS_PER_CUBE + 1;
-      const i = (py * width + px) * 3;
-
-      let best: ColorIndex = 0;
-      let bestD = Infinity;
-      for (let c = 0; c < PALETTE.length; c++) {
-        let total = 0;
-        for (const src of sources) {
-          const dr = src[i] - PALETTE[c].rgb[0];
-          const dg = src[i + 1] - PALETTE[c].rgb[1];
-          const db = src[i + 2] - PALETTE[c].rgb[2];
-          total += 2 * dr * dr + 4 * dg * dg + 3 * db * db;
-        }
-        if (total < bestD) {
-          bestD = total;
-          best = c as ColorIndex;
-        }
-      }
-      centres.push(best);
-    }
+): Uint8Array {
+  const out = new Uint8Array(width * height);
+  for (let p = 0; p < width * height; p++) {
+    const i = p * 3;
+    out[p] = nearestColor(rgb[i], rgb[i + 1], rgb[i + 2]);
   }
-  return centres;
+  return out;
 }

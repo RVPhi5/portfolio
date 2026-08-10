@@ -9,11 +9,18 @@ import {
   loadSources,
   writePreview,
 } from './lib/images';
-import { chooseSharedCentres, isCubeCentre, quantizeWithDither, sliceIntoCubes } from './lib/quantize';
-import { FACES, colorToFace, orientationForFront, type ColorIndex, type Face } from './lib/palette';
+import { quantizeExact, quantizeWithDither, sliceIntoCubes } from './lib/quantize';
+import { colorToFace, orientationForFront, type ColorIndex, type Face } from './lib/palette';
 import { faceToState, frontFace, legalityErrors } from './lib/faceToState';
-import { algBetween, initSolver, moveCount } from './lib/solve';
-import { BASE_MOVES, applyPerm, deriveFaceletPerms, verifyPerms } from './lib/moves';
+import { algBetweenColorStates, initSolver, moveCount } from './lib/solve';
+import {
+  BASE_MOVES,
+  applyPerm,
+  buildRotationGroup,
+  deriveFaceletPerms,
+  permForAlg,
+  verifyPerms,
+} from './lib/moves';
 
 /** Colour letters used in the shipped JSON, indexed to match PALETTE. */
 const COLOR_LETTERS = ['W', 'Y', 'R', 'O', 'B', 'G'] as const;
@@ -32,27 +39,24 @@ if (sources.length < 2) {
   throw new Error(`need at least 2 source images to build transitions; found ${sources.length}`);
 }
 
-const centres = chooseSharedCentres(
-  sources.map((s) => s.pixels),
-  STICKER_COLS,
-  STICKER_ROWS,
-  GRID_COLS,
-  GRID_ROWS,
-);
-
 await mkdir(previewDir, { recursive: true });
 
+// Nothing constrains centres any more: slice turns let a cube change which
+// centre it shows, so each mosaic picks its own per cell and every design
+// renders exactly as drawn.
 const tilesPerMosaic = sources.map((src) => {
-  const stickers = quantizeWithDither(src.pixels, STICKER_COLS, STICKER_ROWS, (x, y) => {
-    if (!isCubeCentre(x, y)) return undefined;
-    return centres[Math.floor(y / 3) * GRID_COLS + Math.floor(x / 3)];
-  });
+  const stickers = src.exact
+    ? quantizeExact(src.pixels, STICKER_COLS, STICKER_ROWS)
+    : quantizeWithDither(src.pixels, STICKER_COLS, STICKER_ROWS);
+  step(`  ${src.id}: ${src.exact ? 'exact cube art, no quantisation' : 'quantised with dither'}`);
   return { id: src.id, stickers, tiles: sliceIntoCubes(stickers, STICKER_COLS, STICKER_ROWS, GRID_COLS, GRID_ROWS) };
 });
 
 for (const m of tilesPerMosaic) {
+  // One preview per mosaic: the site now draws at full opacity, so the
+  // full-strength render is what visitors actually see. The old companion
+  // `-dimmed` render existed only to preview a heavily-alpha'd background.
   await writePreview(join(previewDir, `${m.id}-full.png`), m.stickers, { gap: true });
-  await writePreview(join(previewDir, `${m.id}-dimmed.png`), m.stickers, { alpha: 0.12 });
 }
 step(`  ${sources.length} mosaics x ${GRID_COLS * GRID_ROWS} cubes; previews written`);
 
@@ -60,13 +64,17 @@ step(`  ${sources.length} mosaics x ${GRID_COLS * GRID_ROWS} cubes; previews wri
 step('phase 2: building legal cube states');
 const CELLS = GRID_COLS * GRID_ROWS;
 
-// Per cell, the orientation is fixed for all time by its locked centre colour.
-const orientations = centres.map((c) => orientationForFront(c));
-const toFace = orientations.map((o) => colorToFace(o));
-
-/** Render a state's 54 facelets as colour letters using this cell's orientation. */
-function stateToColors(state: ReturnType<typeof faceToState>, cell: number): string {
-  const faceColors = orientations[cell];
+/**
+ * Render a state's 54 facelets as colour letters under a given orientation.
+ *
+ * The orientation is now per mosaic *and* per cell rather than fixed for all
+ * time: a cube's centre is whatever its own tile asks for, and the transition
+ * carries it to the next mosaic's centre with slice turns.
+ */
+function stateToColors(
+  state: ReturnType<typeof faceToState>,
+  faceColors: Record<Face, ColorIndex>,
+): string {
   const letters = new Cube(state).asString();
   let out = '';
   for (const ch of letters) out += COLOR_LETTERS[faceColors[ch as Face]];
@@ -82,7 +90,10 @@ for (const [mosaicIndex, m] of tilesPerMosaic.entries()) {
 
   for (let cell = 0; cell < CELLS; cell++) {
     const tile = m.tiles[cell];
-    const want = tile.map((c) => toFace[cell][c as ColorIndex] as string);
+    // The tile's own centre sticker picks the orientation.
+    const orientation = orientationForFront(tile[4]);
+    const toFace = colorToFace(orientation);
+    const want = tile.map((c) => toFace[c as ColorIndex] as string);
     // A distinct back-fill per mosaic, so unchanged tiles still have to turn.
     const state = faceToState(want, mosaicIndex + 1);
 
@@ -92,7 +103,7 @@ for (const [mosaicIndex, m] of tilesPerMosaic.entries()) {
       throw new Error(`cell ${cell} of ${m.id}: front face does not match target`);
     }
 
-    const colors = stateToColors(state, cell);
+    const colors = stateToColors(state, orientation);
     // End-to-end check: the colours the browser will draw must equal the
     // quantised tile the image pipeline produced.
     const rendered = colors.slice(18, 27);
@@ -113,7 +124,9 @@ step(`  ${sources.length * CELLS} states built, all legal and exact`);
 step('phase 3: deriving move tables');
 const perms = deriveFaceletPerms();
 verifyPerms(perms);
-step('  facelet permutations verified against 10000 random cubes');
+step(`  ${BASE_MOVES.join(' ')} verified: geometry agrees with cubejs, slices fix their outer faces`);
+const rotationGroup = buildRotationGroup();
+step(`  ${rotationGroup.length} whole-cube rotations expanded into slice turns`);
 
 step('phase 3: solving transitions (this is the slow part)');
 initSolver();
@@ -139,13 +152,15 @@ for (let i = 0; i < tilesPerMosaic.length; i++) {
   const sequences: string[] = [];
 
   for (let cell = 0; cell < CELLS; cell++) {
-    const key = `${new Cube(states[a][cell]).asString()}>${new Cube(states[b][cell]).asString()}`;
+    // Keyed on the colour states, since those — not cubejs's internal model —
+    // are now what the solve is a function of.
+    const key = `${colorStates[a][cell]}>${colorStates[b][cell]}`;
     let alg = algCache.get(key);
     if (alg === undefined) {
-      alg = algBetween(states[a][cell], states[b][cell]);
+      alg = algBetweenColorStates(rotationGroup, colorStates[a][cell], colorStates[b][cell]);
       algCache.set(key, alg);
       solved++;
-      if (solved % 25 === 0) step(`    ${solved} distinct solves done`);
+      if (solved % 250 === 0) step(`    ${solved} distinct solves done`);
     } else {
       cacheHits++;
     }
@@ -153,12 +168,7 @@ for (let i = 0; i < tilesPerMosaic.length; i++) {
     // Replay through the *shipped* representation — colour letters plus the
     // derived permutations — so the data is proven correct in exactly the form
     // the browser will consume, not merely in cubejs's internal model.
-    let facelets = colorStates[a][cell];
-    for (const token of alg.split(/\s+/).filter(Boolean)) {
-      const base = token[0] as (typeof BASE_MOVES)[number];
-      const turns = token.endsWith('2') ? 2 : token.endsWith("'") ? 3 : 1;
-      for (let t = 0; t < turns; t++) facelets = applyPerm(facelets, perms[base]);
-    }
+    const facelets = applyPerm(colorStates[a][cell], permForAlg(perms, alg));
     if (facelets !== colorStates[b][cell]) {
       throw new Error(`cell ${cell}, ${tilesPerMosaic[a].id}->${tilesPerMosaic[b].id}: replay mismatch`);
     }

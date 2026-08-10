@@ -90,8 +90,8 @@ export class MosaicEngine {
   /**
    * Expand each cube's move sequence into the frames the renderer needs.
    *
-   * B turns are dropped here rather than animated with zero duration: they
-   * never alter the front face, so giving them a slot would show a visible
+   * B and S turns are dropped here rather than animated with zero duration:
+   * neither touches a front facelet, so giving them a slot would show a visible
    * pause. Their state change still happens, because the next step's `from` is
    * taken after they were applied.
    */
@@ -111,7 +111,7 @@ export class MosaicEngine {
         const before = state;
         state = this.applyToken(state, token);
         const face = token[0];
-        if (face === 'B') continue; // invisible from the front
+        if (face === 'B' || face === 'S') continue; // no front facelet moves
         steps.push({
           from: frontOf(before),
           to: frontOf(state),
