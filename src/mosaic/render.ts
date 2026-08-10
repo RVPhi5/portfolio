@@ -1,4 +1,4 @@
-import { PALETTE_HEX, STICKER_GAP } from './config';
+import { PALETTE_HEX } from './config';
 
 /**
  * One visible move: the front face before it, the front face after it, and
@@ -12,6 +12,62 @@ export type Step = {
   /** Signed quarter turns: 1, -1 or 2. */
   turns: number;
 };
+
+/**
+ * Per-colour queue of axis-aligned rects, flushed once per frame.
+ *
+ * Two costs are being traded off. Assigning `ctx.fillStyle` re-parses a CSS
+ * colour string, and the grid draws ~50,000 stickers a frame, so painting each
+ * one immediately means ~50,000 parses. But `fillRect` is a renderer fast path
+ * that skips path building and tessellation entirely, so batching into a
+ * `Path2D` and filling once — which does cut the state changes to six — lands
+ * well behind where it started.
+ *
+ * Queuing coordinates and replaying them as `fillRect` gets both: six
+ * `fillStyle` assignments per frame, every sticker still on the fast path.
+ */
+export class RectBatch {
+  /** Packed x, y, w, h per rect, one buffer per palette colour. */
+  private buffers: Float32Array[];
+  private counts: Int32Array;
+
+  constructor(initialRects = 1024) {
+    this.buffers = PALETTE_HEX.map(() => new Float32Array(initialRects * 4));
+    this.counts = new Int32Array(PALETTE_HEX.length);
+  }
+
+  add(color: number, x: number, y: number, w: number, h: number) {
+    let buf = this.buffers[color];
+    const n = this.counts[color];
+    if ((n + 1) * 4 > buf.length) {
+      // Double and copy. Amortises to nothing after the first few frames,
+      // because the instance is reused for the life of the canvas.
+      const grown = new Float32Array(buf.length * 2);
+      grown.set(buf);
+      this.buffers[color] = grown;
+      buf = grown;
+    }
+    const i = n * 4;
+    buf[i] = x;
+    buf[i + 1] = y;
+    buf[i + 2] = w;
+    buf[i + 3] = h;
+    this.counts[color] = n + 1;
+  }
+
+  flush(ctx: CanvasRenderingContext2D) {
+    for (let c = 0; c < this.buffers.length; c++) {
+      const n = this.counts[c];
+      if (n === 0) continue;
+      ctx.fillStyle = PALETTE_HEX[c];
+      const buf = this.buffers[c];
+      for (let i = 0; i < n * 4; i += 4) {
+        ctx.fillRect(buf[i], buf[i + 1], buf[i + 2], buf[i + 3]);
+      }
+    }
+    this.counts.fill(0);
+  }
+}
 
 /** Which of the 9 front stickers a given layer turn disturbs. */
 function affects(face: Step['face'], index: number): boolean {
@@ -29,30 +85,21 @@ function affects(face: Step['face'], index: number): boolean {
   }
 }
 
-function sticker(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-  color: number,
-) {
-  ctx.fillStyle = PALETTE_HEX[color];
-  ctx.fillRect(x, y, size, size);
-}
-
 /** Draw a still cube face — the common case, since most frames are static. */
 export function drawFace(
-  ctx: CanvasRenderingContext2D,
+  batch: RectBatch,
   x: number,
   y: number,
   size: number,
   face: Uint8Array,
+  gap: number,
 ) {
-  const s = (size - 2 * STICKER_GAP) / 3;
+  const s = (size - 2 * gap) / 3;
+  const pitch = s + gap;
   for (let i = 0; i < 9; i++) {
     const col = i % 3;
     const row = (i / 3) | 0;
-    sticker(ctx, x + col * (s + STICKER_GAP), y + row * (s + STICKER_GAP), s, face[i]);
+    batch.add(face[i], x + col * pitch, y + row * pitch, s, s);
   }
 }
 
@@ -70,20 +117,30 @@ export function drawFace(
  */
 export function drawStep(
   ctx: CanvasRenderingContext2D,
+  batch: RectBatch,
   x: number,
   y: number,
   size: number,
   step: Step,
   progress: number,
+  gap: number,
 ) {
-  const s = (size - 2 * STICKER_GAP) / 3;
-  const pitch = s + STICKER_GAP;
+  const s = (size - 2 * gap) / 3;
+  const pitch = s + gap;
 
   if (step.face === 'F') {
+    // Rotated stickers are not axis-aligned, so they cannot be queued. They go
+    // straight out under a context rotation — one save/restore per cube, and F
+    // is one of five visible faces, so this stays a minority of the frame.
     ctx.save();
     ctx.translate(x + size / 2, y + size / 2);
     ctx.rotate((Math.PI / 2) * step.turns * progress);
-    drawFace(ctx, -size / 2, -size / 2, size, step.from);
+    for (let i = 0; i < 9; i++) {
+      const col = i % 3;
+      const row = (i / 3) | 0;
+      ctx.fillStyle = PALETTE_HEX[step.from[i]];
+      ctx.fillRect(-size / 2 + col * pitch, -size / 2 + row * pitch, s, s);
+    }
     ctx.restore();
     return;
   }
@@ -101,21 +158,17 @@ export function drawStep(
     const sy = y + row * pitch;
 
     if (!affects(step.face, i)) {
-      sticker(ctx, sx, sy, s, step.from[i]);
+      batch.add(step.from[i], sx, sy, s, s);
       continue;
     }
 
-    // Squash about the sticker's own centre line. Drawing the rect directly at
-    // the reduced size is cheaper than a save/rotate/restore per sticker, and
-    // there are ~3,000 of these per frame.
+    // Squash about the sticker's own centre line.
     if (horizontal) {
       const h = s * squash;
-      ctx.fillStyle = PALETTE_HEX[shown[i]];
-      ctx.fillRect(sx, sy + (s - h) / 2, s, h);
+      batch.add(shown[i], sx, sy + (s - h) / 2, s, h);
     } else {
       const w = s * squash;
-      ctx.fillStyle = PALETTE_HEX[shown[i]];
-      ctx.fillRect(sx + (s - w) / 2, sy, w, s);
+      batch.add(shown[i], sx + (s - w) / 2, sy, w, s);
     }
   }
 }

@@ -16,6 +16,17 @@ export default {
       },
       fontFamily: {
         sans: ['"Inter Tight Variable"', 'system-ui', 'sans-serif'],
+        // Display serif for the hero name only. A system stack rather than a
+        // webfont, so it costs no bytes and no network request — at the price
+        // of resolving to a different face per OS.
+        display: [
+          '"Iowan Old Style"',
+          '"Palatino Linotype"',
+          'Palatino',
+          '"Book Antiqua"',
+          'Georgia',
+          'serif',
+        ],
       },
       maxWidth: {
         content: '720px',

@@ -1,7 +1,12 @@
 /** Every tunable in one place. */
 
-/** Alpha the whole mosaic is drawn at, over the site's #0A0A0A background. */
-export const OPACITY = 0.12;
+/**
+ * Alpha the whole mosaic is drawn at, over the site's #0A0A0A background.
+ * The reading column is painted solid `bg` (see components/Layout.tsx), so the
+ * cubes only ever show in the margins and can run well above the 0.12 that
+ * text legibility used to cap them at.
+ */
+export const OPACITY = 1;
 
 /** How long a completed mosaic sits still before the next transition starts. */
 export const HOLD_MS = 8000;
@@ -17,11 +22,17 @@ export const TRANSITION_MS = 6000;
 export const STAGGER = true;
 export const STAGGER_MS = 1600;
 
-/** Gap between cubes, in CSS px at base scale, so the grid structure reads. */
-export const CUBE_GAP = 2;
+/**
+ * Gaps are fractions of the cube's on-screen size, not fixed pixels: the grid
+ * is dense enough that a cube is ~19px on a 1080p desktop, where a fixed 2px
+ * seam would eat 10% of it. Expressed as ratios, the cube reads the same at
+ * any grid density or viewport.
+ */
+export const CUBE_GAP_RATIO = 0.05;
+export const STICKER_GAP_RATIO = 0.03;
 
-/** Gap between stickers within a cube — the classic cube look. */
-export const STICKER_GAP = 1;
+/** Floor in device-independent px, so seams never vanish entirely. */
+export const MIN_GAP = 0.5;
 
 /** Retina sharpness without the cost of 3x backing stores. */
 export const MAX_DPR = 2;

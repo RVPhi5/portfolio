@@ -23,6 +23,9 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* Smooth jump for the hero's "View projects" anchor. The reduced-motion
+       block below forces this back to `auto`. */
+    scroll-behavior: smooth;
   }
 
   body {

@@ -5,6 +5,13 @@ import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 type MediaWellProps = {
   media?: Project['media'];
   title: string;
+  /**
+   * When set, the well fills its parent instead of holding a 16:9 box, and
+   * drops its own rounding and border. Used by the project cards, where the
+   * card supplies the frame and the panel has to match the text column's
+   * height rather than its own aspect ratio.
+   */
+  fill?: boolean;
 };
 
 /**
@@ -13,11 +20,12 @@ type MediaWellProps = {
  * Videos autoplay muted/looped and lazily; reduced-motion viewers get the
  * static poster frame instead of a playing video.
  */
-export default function MediaWell({ media, title }: MediaWellProps) {
+export default function MediaWell({ media, title, fill = false }: MediaWellProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const frame =
-    'relative w-full overflow-hidden rounded-xl border border-border bg-surface aspect-video';
+  const frame = fill
+    ? 'relative h-full min-h-[200px] w-full overflow-hidden bg-surface'
+    : 'relative w-full overflow-hidden rounded-xl border border-border bg-surface aspect-video';
 
   if (!media) {
     return (

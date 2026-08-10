@@ -3,16 +3,16 @@ import { join, parse } from 'node:path';
 import sharp from 'sharp';
 import { PALETTE, type ColorIndex } from './palette';
 
-export const GRID_COLS = 24;
-export const GRID_ROWS = 14;
-export const STICKER_COLS = GRID_COLS * 3; // 72
-export const STICKER_ROWS = GRID_ROWS * 3; // 42
+export const GRID_COLS = 100;
+export const GRID_ROWS = 55;
+export const STICKER_COLS = GRID_COLS * 3; // 300
+export const STICKER_ROWS = GRID_ROWS * 3; // 165
 
 export type Source = { id: string; pixels: Uint8Array };
 
 /**
  * Load every image in the source directory, downsampled to exactly the sticker
- * grid. `fit: 'cover'` crops rather than squashes — the grid's 12:7 aspect is
+ * grid. `fit: 'cover'` crops rather than squashes — the grid's 20:11 aspect is
  * fixed, and distorting the artwork to match would be worse than cropping it.
  */
 export async function loadSources(dir: string): Promise<Source[]> {

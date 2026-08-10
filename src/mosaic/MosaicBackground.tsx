@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { CUBE_GAP, HOLD_MS, MAX_DPR, OPACITY } from './config';
+import {
+  CUBE_GAP_RATIO,
+  HOLD_MS,
+  MAX_DPR,
+  MIN_GAP,
+  OPACITY,
+  STICKER_GAP_RATIO,
+} from './config';
 import { MosaicEngine, type MosaicData } from './engine';
-import { drawFace, drawStep } from './render';
+import { RectBatch, drawFace, drawStep } from './render';
 import rawData from './data/mosaics.json';
 
 const data = rawData as MosaicData;
@@ -35,7 +42,13 @@ export function MosaicBackground() {
 
     const engine = new MosaicEngine(data, Math.floor(Math.random() * data.mosaics.length));
 
+    // One instance for the life of the canvas: its buffers grow to the frame's
+    // high-water mark and are then reused, so steady state allocates nothing.
+    const batch = new RectBatch(engine.cellCount * 9);
+
     let cubeSize = 0;
+    let cubeGap = 0;
+    let stickerGap = 0;
     let originX = 0;
     let originY = 0;
     let raf = 0;
@@ -62,6 +75,8 @@ export function MosaicBackground() {
       ctx.globalAlpha = OPACITY;
 
       cubeSize = Math.max(vw / engine.cols, vh / engine.rows);
+      cubeGap = Math.max(MIN_GAP, cubeSize * CUBE_GAP_RATIO);
+      stickerGap = Math.max(MIN_GAP, cubeSize * STICKER_GAP_RATIO);
       originX = (vw - cubeSize * engine.cols) / 2;
       originY = (vh - cubeSize * engine.rows) / 2;
     };
@@ -71,7 +86,7 @@ export function MosaicBackground() {
       const vh = window.innerHeight;
       ctx.clearRect(0, 0, vw, vh);
 
-      const size = cubeSize - CUBE_GAP;
+      const size = cubeSize - cubeGap;
 
       for (let cell = 0; cell < engine.cellCount; cell++) {
         const col = cell % engine.cols;
@@ -83,9 +98,11 @@ export function MosaicBackground() {
         if (x + cubeSize < 0 || y + cubeSize < 0 || x > vw || y > vh) continue;
 
         const active = engine.sample(now, cell);
-        if (active) drawStep(ctx, x, y, size, active.step, active.progress);
-        else drawFace(ctx, x, y, size, engine.faceAt(cell));
+        if (active) drawStep(ctx, batch, x, y, size, active.step, active.progress, stickerGap);
+        else drawFace(batch, x, y, size, engine.faceAt(cell), stickerGap);
       }
+
+      batch.flush(ctx);
     };
 
     const tick = (now: number) => {
