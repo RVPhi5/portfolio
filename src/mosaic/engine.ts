@@ -5,7 +5,8 @@ export type MosaicData = {
   gridCols: number;
   gridRows: number;
   movePerms: Record<string, number[]>;
-  mosaics: { id: string; faces: string[]; states: string[] }[];
+  /** `states` is the full 54 facelets; the visible front is 18..26 of it. */
+  mosaics: { id: string; states: string[] }[];
   transitions: { from: string; to: string; sequences: string[] }[];
 };
 

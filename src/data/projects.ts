@@ -5,7 +5,11 @@ export type Project = {
   category: string; // eyebrow on detail page
   dates: string; // e.g. "2025–present"
   tagline: string; // one sentence
-  media?: { type: 'image' | 'video'; src: string; poster?: string };
+  /**
+   * `src` is a file URL for image/video, and a bare YouTube video id for
+   * `youtube`.
+   */
+  media?: { type: 'image' | 'video' | 'youtube'; src: string; poster?: string };
   links: { label: string; href: string; icon: 'github' | 'external' }[];
   tags: string[]; // sidebar stack pills
   highlights: { value: string; label: string }[];
@@ -26,6 +30,7 @@ export const projects: Project[] = [
     dates: '2026',
     tagline:
       'A course-planning platform mapping prerequisite graphs, grades, and professor ratings across 150+ universities.',
+    media: { type: 'youtube', src: 'oRhyapIReWc' },
     links: [
       { label: 'Visit site', href: 'https://coursetrees.com', icon: 'external' },
     ],

@@ -16,9 +16,10 @@ type MediaWellProps = {
 
 /**
  * Full-width 16:9 media container.
- * Renders an image, a video, or a "coming soon" placeholder.
+ * Renders an image, a video, a YouTube embed, or a "coming soon" placeholder.
  * Videos autoplay muted/looped and lazily; reduced-motion viewers get the
- * static poster frame instead of a playing video.
+ * static poster frame instead of a playing video, and YouTube embeds drop
+ * their autoplay so the viewer starts them.
  */
 export default function MediaWell({ media, title, fill = false }: MediaWellProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -47,6 +48,36 @@ export default function MediaWell({ media, title, fill = false }: MediaWellProps
           loading="lazy"
           decoding="async"
           className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
+  if (media.type === 'youtube') {
+    // `loop` on the embed player only works alongside a single-video playlist.
+    const params = new URLSearchParams({
+      modestbranding: '1',
+      rel: '0',
+      playsinline: '1',
+      controls: '1',
+    });
+    if (!prefersReducedMotion) {
+      params.set('autoplay', '1');
+      params.set('mute', '1');
+      params.set('loop', '1');
+      params.set('playlist', media.src);
+    }
+
+    return (
+      <div className={frame}>
+        <iframe
+          className="absolute inset-0 h-full w-full"
+          src={`https://www.youtube-nocookie.com/embed/${media.src}?${params.toString()}`}
+          title={`${title} preview`}
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
         />
       </div>
     );

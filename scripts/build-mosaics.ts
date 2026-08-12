@@ -194,8 +194,11 @@ const payload = {
   movePerms: Object.fromEntries(BASE_MOVES.map((m) => [m, perms[m]])),
   mosaics: tilesPerMosaic.map((m, i) => ({
     id: m.id,
-    faces: colorStates[i].map((s) => s.slice(18, 27)),
-    /** Full 54-facelet colour state; playback needs the hidden faces. */
+    /**
+     * Full 54-facelet colour state. Playback needs the hidden faces, and the
+     * visible front is just facelets 18..26 of it — so no separate front-face
+     * field is emitted, which would be ~200 kB of pure duplication.
+     */
     states: colorStates[i],
   })),
   transitions,
