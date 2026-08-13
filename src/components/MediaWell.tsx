@@ -54,30 +54,56 @@ export default function MediaWell({ media, title, fill = false }: MediaWellProps
   }
 
   if (media.type === 'youtube') {
-    // `loop` on the embed player only works alongside a single-video playlist.
+    // Reduced motion: the still thumbnail stands in for the clip, matching how
+    // the <video> branch below falls back to its poster frame.
+    if (prefersReducedMotion) {
+      return (
+        <div className={frame}>
+          <img
+            src={media.poster ?? `https://i.ytimg.com/vi/${media.src}/maxresdefault.jpg`}
+            alt={`${title} preview`}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
+        </div>
+      );
+    }
+
+    // Params chosen so the embed reads as a looping GIF rather than a player:
+    // no chrome, no keyboard, no annotations, no fullscreen button. `loop`
+    // only works on the embed player alongside a single-video playlist.
     const params = new URLSearchParams({
+      autoplay: '1',
+      mute: '1',
+      loop: '1',
+      playlist: media.src,
+      controls: '0',
+      disablekb: '1',
+      fs: '0',
+      iv_load_policy: '3',
       modestbranding: '1',
       rel: '0',
       playsinline: '1',
-      controls: '1',
+      showinfo: '0',
     });
-    if (!prefersReducedMotion) {
-      params.set('autoplay', '1');
-      params.set('mute', '1');
-      params.set('loop', '1');
-      params.set('playlist', media.src);
-    }
 
     return (
       <div className={frame}>
+        {/* The iframe is sized to cover rather than fit, so a non-16:9 frame
+            (the project cards) crops the video instead of letterboxing it the
+            way an inset-0 iframe would. `pointer-events-none` keeps YouTube's
+            hover chrome — title bar, watermark, end cards — from ever
+            appearing. */}
         <iframe
-          className="absolute inset-0 h-full w-full"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-auto w-auto min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 aspect-video border-0"
           src={`https://www.youtube-nocookie.com/embed/${media.src}?${params.toString()}`}
           title={`${title} preview`}
           loading="lazy"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          tabIndex={-1}
+          aria-hidden="true"
+          allow="autoplay; encrypted-media"
           referrerPolicy="strict-origin-when-cross-origin"
-          allowFullScreen
         />
       </div>
     );
