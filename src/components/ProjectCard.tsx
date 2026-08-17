@@ -35,7 +35,7 @@ export default function ProjectCard({ project, flip = false }: ProjectCardProps)
           {/* `fill` drops the well's own 16:9 box so the panel matches the
               text column's height instead of leaving a gap under the shorter
               of the two. */}
-          <MediaWell media={project.media} title={project.title} fill />
+          <MediaWell media={project.cardMedia ?? project.media} title={project.title} fill />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-6 md:p-7">

@@ -1,3 +1,10 @@
+export type Media = {
+  type: 'image' | 'video' | 'youtube';
+  /** A file URL for image/video, and a bare YouTube video id for `youtube`. */
+  src: string;
+  poster?: string;
+};
+
 export type Project = {
   slug: string; // URL segment
   title: string;
@@ -5,11 +12,12 @@ export type Project = {
   category: string; // eyebrow on detail page
   dates: string; // e.g. "2025–present"
   tagline: string; // one sentence
+  media?: Media;
   /**
-   * `src` is a file URL for image/video, and a bare YouTube video id for
-   * `youtube`.
+   * Shown on the homepage card in place of `media`. Lets a project lead with a
+   * still on the index and save a heavier video for its detail page.
    */
-  media?: { type: 'image' | 'video' | 'youtube'; src: string; poster?: string };
+  cardMedia?: Media;
   links: { label: string; href: string; icon: 'github' | 'external' }[];
   tags: string[]; // sidebar stack pills
   highlights: { value: string; label: string }[];
@@ -31,6 +39,7 @@ export const projects: Project[] = [
     tagline:
       'A course-planning platform mapping prerequisite graphs, grades, and professor ratings across 150+ universities.',
     media: { type: 'youtube', src: 'oRhyapIReWc' },
+    cardMedia: { type: 'image', src: '/media/coursetrees.png' },
     links: [
       { label: 'Visit site', href: 'https://coursetrees.com', icon: 'external' },
     ],
@@ -144,6 +153,7 @@ export const projects: Project[] = [
     dates: '2026–present',
     tagline:
       'A browser implementation of Dou Shou Qi with AI opponents and real-time online multiplayer.',
+    media: { type: 'image', src: '/media/jungle.png' },
     links: [
       // TODO: point at the real Jungle repository.
       { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },
