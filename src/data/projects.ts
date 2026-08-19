@@ -56,7 +56,7 @@ export const projects: Project[] = [
         ],
       },
       {
-        heading: 'What I built',
+        heading: 'What we built',
         paragraphs: [
           'Interactive prerequisite graphs rendered with Cytoscape over roughly 400K courses and 400K+ dependency edges, with per-school theming and department filtering.',
           'Python ingestion pipelines that normalize catalogs, offerings, and grade distributions from public university sources into a shared Postgres schema keyed by school.',
@@ -132,7 +132,7 @@ export const projects: Project[] = [
         ],
       },
       {
-        heading: 'What I built',
+        heading: 'What we built',
         paragraphs: [
           'An end-to-end pipeline processing 13K+ card images into 527-dimensional representations that combine 512-dim CLIP ViT-B/32 embeddings with 15 handcrafted color features.',
           'A human-in-the-loop labeling interface that collected 200 preference examples, used to train an MLP ranker with a pairwise logistic ranking loss.',
