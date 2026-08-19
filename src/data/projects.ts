@@ -114,6 +114,7 @@ export const projects: Project[] = [
     dates: '2026',
     tagline:
       'An ML recommender that ranks trading cards by visual cohesion rather than set, rarity, or type.',
+    media: { type: 'image', src: '/media/pokematch-poster.png' },
     links: [
       // TODO: point at the real PokéMatch repository.
       { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },

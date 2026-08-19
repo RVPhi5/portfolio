@@ -22,11 +22,24 @@ const data = rawData as MosaicData;
  * handled inside one effect — routing them through React state instead would
  * tear down and restart the loop on every tab switch, losing the transition's
  * place.
+ *
+ * `paused` stops the mosaic from advancing to the next picture. It reaches the
+ * loop through a ref for the same reason: as an effect dependency it would
+ * rebuild the engine on every navigation, which also re-rolls the random
+ * starting mosaic — the opposite of holding the picture still.
  */
-export function MosaicBackground() {
+export function MosaicBackground({ paused = false }: { paused?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reducedMotion = usePrefersReducedMotion();
   const [failed, setFailed] = useState(false);
+  const pausedRef = useRef(paused);
+  /** Set by the effect below; restarts a hold that was skipped while paused. */
+  const resumeRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    if (!paused) resumeRef.current?.();
+  }, [paused]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -115,13 +128,31 @@ export function MosaicBackground() {
       raf = requestAnimationFrame(tick);
     };
 
+    // True when a hold elapsed while paused, so resuming owes a transition.
+    let holdExpiredWhilePaused = false;
+
     function scheduleNext() {
       clearTimeout(holdTimer);
       holdTimer = setTimeout(() => {
+        // Checked here rather than before the timer so a pause that arrives
+        // mid-hold still lands: the current picture is what gets held.
+        if (pausedRef.current) {
+          holdExpiredWhilePaused = true;
+          return;
+        }
         engine.beginTransition(performance.now());
         raf = requestAnimationFrame(tick);
       }, HOLD_MS);
     }
+
+    // A transition already in flight is allowed to finish — freezing cubes
+    // mid-flip looks broken — so pausing only ever takes effect at the next
+    // hold. Unpausing gives back a full hold rather than transitioning at once.
+    resumeRef.current = () => {
+      if (!holdExpiredWhilePaused) return;
+      holdExpiredWhilePaused = false;
+      scheduleNext();
+    };
 
     // Nothing changes between transitions, so there is no loop running then —
     // the canvas simply holds its last frame.
@@ -157,6 +188,7 @@ export function MosaicBackground() {
     }
 
     return () => {
+      resumeRef.current = null;
       window.removeEventListener('resize', onResize);
       document.removeEventListener('visibilitychange', onVisibility);
       cancelAnimationFrame(raf);

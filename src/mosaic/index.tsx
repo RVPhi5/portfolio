@@ -31,12 +31,17 @@ class MosaicBoundary extends Component<{ children: ReactNode }, { failed: boolea
   }
 }
 
-/** Single mount point for the mosaic background. */
-export default function MosaicBackgroundRoot() {
+/**
+ * Single mount point for the mosaic background.
+ *
+ * `paused` holds the current picture: the mosaic finishes any transition
+ * already running, then stops starting new ones until it clears.
+ */
+export default function MosaicBackgroundRoot({ paused = false }: { paused?: boolean }) {
   return (
     <MosaicBoundary>
       <Suspense fallback={null}>
-        <MosaicBackground />
+        <MosaicBackground paused={paused} />
       </Suspense>
     </MosaicBoundary>
   );
