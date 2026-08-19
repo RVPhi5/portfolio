@@ -52,7 +52,7 @@ export const projects: Project[] = [
       {
         heading: 'Overview',
         paragraphs: [
-          'CourseTrees turns a university course catalog into something you can actually navigate: an interactive prerequisite graph layered with grade distributions, professor ratings, and degree requirements, covering 150+ schools.',
+          'CourseTrees turns a university course catalog into an interactive prerequisite graph layered with grade distributions, professor ratings, and degree requirements, covering 150+ schools.',
         ],
       },
       {
