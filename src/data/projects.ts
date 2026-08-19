@@ -59,7 +59,7 @@ export const projects: Project[] = [
         heading: 'What I built',
         paragraphs: [
           'Interactive prerequisite graphs rendered with Cytoscape over roughly 400K courses and 400K+ dependency edges, with per-school theming and department filtering.',
-          'Python ingestion pipelines that scrape and normalize catalogs, offerings, and grade distributions from public university sources into a shared Postgres schema keyed by school.',
+          'Python ingestion pipelines that normalize catalogs, offerings, and grade distributions from public university sources into a shared Postgres schema keyed by school.',
           'A Next.js 15 App Router front end on Supabase, where every write goes through an atomic Postgres RPC and row-level security is the security boundary rather than the API layer.',
         ],
       },
