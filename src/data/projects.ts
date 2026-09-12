@@ -3,6 +3,13 @@ export type Media = {
   /** A file URL for image/video, and a bare YouTube video id for `youtube`. */
   src: string;
   poster?: string;
+  /**
+   * How the asset sits in the 16:9 media well. `cover` (the default) fills the
+   * frame and crops the overflow, which suits landscape stills and clips.
+   * `contain` letterboxes instead, for assets whose aspect is far from 16:9 —
+   * portrait phone captures, posters — where cropping would eat the content.
+   */
+  fit?: 'cover' | 'contain';
 };
 
 export type Project = {
@@ -22,6 +29,14 @@ export type Project = {
   tags: string[]; // sidebar stack pills
   highlights: { value: string; label: string }[];
   sections: { heading: string; paragraphs: string[] }[];
+  /**
+   * Keeps the project off the homepage grid and out of prev/next, while
+   * `/projects/<slug>` keeps working — so a link already out in the world (a
+   * resume, an application) still resolves. This is un-featuring, NOT a
+   * privacy control: the page stays public to anyone holding the URL, and it
+   * stays in the JS bundle. Delete the entry instead if it should be gone.
+   */
+  unlisted?: boolean;
 };
 
 // Single source of truth: the homepage list, detail pages, and prev/next
@@ -33,6 +48,9 @@ export const projects: Project[] = [
   {
     slug: 'coursetrees',
     title: 'CourseTrees',
+    // Un-featured for now — off the homepage, still reachable at
+    // /projects/coursetrees. Remove this line to put the card back.
+    unlisted: true,
     stackSummary: 'Next.js · Supabase · Postgres',
     category: 'Full-stack',
     dates: '2026',
@@ -79,29 +97,53 @@ export const projects: Project[] = [
     category: 'Systems',
     dates: 'Feb–May 2026',
     tagline:
-      'A full IPv4, TCP, and RIP implementation written from scratch over UDP tunnels.',
+      'A from-scratch IPv4, TCP, and RIP implementation over UDP tunnels that interoperates with the course reference and moves 1 MB 2.28× faster.',
     links: [
       // TODO: point at the real TCP/IP stack repository.
       { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },
     ],
-    tags: ['C++', 'TCP', 'RIP', 'UDP Sockets', 'Concurrency'],
+    tags: ['C++', 'TCP', 'RIP', 'UDP Sockets', 'Concurrency', 'Wireshark'],
     highlights: [
-      { value: '3', label: 'protocol layers built' },
-      { value: '4-tuple', label: 'socket demux' },
+      { value: '2.28×', label: 'faster than the reference on 1 MB' },
+      { value: '3.37%', label: 'retransmit rate at 2% induced loss' },
+      { value: '184×', label: 'run-to-run spread traced to one bug' },
     ],
     sections: [
       {
         heading: 'Overview',
         paragraphs: [
-          'A userspace networking stack implementing the IP and transport layers from the ground up, running over UDP tunnels that emulate physical links between virtual hosts and routers.',
+          'A userspace networking stack built for Brown’s CSCI 1680, implementing the IP and transport layers from the ground up over UDP tunnels that emulate physical links between virtual hosts and routers. The course supplied a reference implementation and the link-file parser; IP forwarding, RIP, the TCP stack, the socket API, and the REPL are mine.',
         ],
       },
       {
         heading: 'What I built',
         paragraphs: [
-          'An IPv4 layer with header parsing, checksum validation, TTL handling, and longest-prefix-match forwarding, plus a custom RIP implementation carried over IP protocol 200 for dynamic route distribution.',
-          'A full TCP implementation: three-way handshake, socket demultiplexing by 4-tuple, sliding-window transfer, RTT/RTO estimation with exponential backoff, and zero-window probing.',
-          'Graceful connection teardown handling all FIN states across the state machine.',
+          'An IPv4 layer that validates headers and checksums, decrements TTL, and forwards or delivers by longest-prefix match, with one UDP socket per interface underneath and a protocol-to-handler map above — TCP on protocol 6, and a custom RIP with triggered updates, split horizon, and poisoned reverse on protocol 200.',
+          'A full TCP: the state machine and three-way handshake, socket demultiplexing by 4-tuple, send and receive buffers with sliding-window transfer, a retransmit queue driven by RTT/RTO estimation with exponential backoff, an early-arrival queue for out-of-order segments, zero-window probing, and graceful teardown across every FIN state including half-close.',
+          'A socket API — v_listen, v_accept, v_connect, v_read, v_write, v_close — and a REPL over it for bringing interfaces up and down, inspecting the routing and interface tables, and driving file sends and receives between nodes.',
+        ],
+      },
+      {
+        heading: 'Reliability decisions',
+        paragraphs: [
+          'RTO is SRTT + 4·RTTVAR, clamped, with RTTVAR updated first, against the old SRTT and every constant a power of two so the estimator needs no division. The margin has to scale with jitter rather than mean RTT: too short and the sender resends data still in flight, too long and the link goes dead after a loss. RFC 6298 mandates a one-second floor to absorb receivers that delay ACKs 200–500 ms to piggyback them; this stack has no delayed ACKs and RTTs in the microseconds, so the floor drops to 1 ms.',
+          'Segments arriving past a gap are queued rather than dropped and spliced into the stream when the gap fills, since discarding them would force the peer to resend data that already arrived. When the receive buffer fills and the window closes, the reopening update is a pure ACK — and pure ACKs are never retransmitted — so the sender probes with a single byte outside the window rather than waiting on an update that may never arrive. A FIN carries the connection’s final sequence number and is only sent once the send buffer drains.',
+          'A first 1 MB pass at 2% induced loss moved 832 data segments with 28 retransmissions (3.37%), against 2.16% measured loss on data and 2.21% on ACKs at the router. All 602 duplicate ACKs were ignored — there is no fast retransmit — nothing arrived out of order, and the transfer came through byte-identical.',
+        ],
+      },
+      {
+        heading: 'Finding a 184× stall',
+        paragraphs: [
+          'The same 1 MB transfer on the same machine took either 0.087 s or 16.02 s, never anything in between. A bimodal split with an empty middle rules out variable load, and the slow runs each logged exactly 16 zero-window events against zero on the fast ones.',
+          'The first hypothesis, raised in a code review, was that RTT samples were being taken from retransmitted segments. Instrumenting it showed the path fired 19 times and changed the outcome zero times — the timestamp was already cleared a line earlier, so the bad sample was never taken — and the measured effect was −0.50 s against a pooled σ of 1.85 s. The real cause was a message that was never sent: the application drained the receive buffer, freeing space, without telling the sender, so the window reopened only when the one-second zero-window probe fired. Sixteen stalls of one second, one 64 KiB buffer apiece, is exactly 1 MiB and 16 s — the transfer was being paced by the probe timer. Probing is the backstop for a lost update, not the delivery path for every update.',
+          'Emitting a window update whenever the application frees receive space removed the stall and left the fast path 2.28× faster than the reference. A second trap was in the instrument rather than the code: the first read of a lossy capture reported 825 retransmissions against a true count of 24, because both hops are on loopback, every packet is therefore captured twice, and the analyzer scores the duplicate as a retransmission. A display filter does not help — the analysis flags are computed over every frame before the filter is applied to the output.',
+        ],
+      },
+      {
+        heading: 'Keeping it correct',
+        paragraphs: [
+          'Most of the invariants are carried by the structure rather than by discipline. IP holds nothing but a protocol-to-handler map — no type at that layer names a socket or a route — so a layering violation is unreachable by construction. Addresses are value types throughout and byte-order conversion happens only inside header serialization, which turns a host/network mixup into a compile error. Every shared field names its mutex and the lock order is fixed stack-then-socket, since races were the dominant defect class early on. Timers are a single sorted queue on one thread rather than a timer object per outstanding segment. Sequence arithmetic goes only through wraparound-safe helpers, never a raw comparison or subtraction — an underflow once dropped 22 KB silently while reporting success.',
+          'Each layer was tested as it landed, checked against the reference implementation for interoperability, and re-run repeatedly before any timing claim, with the capture analyzer itself verified before its numbers were trusted. The stack has no congestion control, no simultaneous open, no TCP options, no delayed ACKs, and no fast retransmit, and it runs over loopback only. TCP options, congestion control, and moving beyond loopback are next.',
         ],
       },
     ],
@@ -114,7 +156,7 @@ export const projects: Project[] = [
     dates: '2026',
     tagline:
       'An ML recommender that ranks trading cards by visual cohesion rather than set, rarity, or type.',
-    media: { type: 'image', src: '/media/pokematch-poster.png' },
+    media: { type: 'image', src: '/media/pokematch-poster.png', fit: 'contain' },
     links: [
       // TODO: point at the real PokéMatch repository.
       { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },
@@ -353,6 +395,7 @@ export const projects: Project[] = [
     dates: '2026',
     tagline:
       'An AI event-discovery app that turns a city, budget, and date into a day rendered as a list, a map route, and an aerial tour.',
+    media: { type: 'image', src: '/media/oughttosee.png', fit: 'contain' },
     links: [
       // TODO: point at the real OughtToSee repository.
       { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },
@@ -388,3 +431,47 @@ export const projects: Project[] = [
     ],
   },
 ];
+
+/** The homepage grid's source — `projects` minus anything `unlisted`. */
+export const listedProjects: Project[] = projects.filter((p) => !p.unlisted);
+
+/**
+ * Wrap-around prev/next for a detail page, walking LISTED projects only so the
+ * footer never links into an un-featured page.
+ *
+ * An unlisted project is still reachable by direct link, and needs neighbors
+ * too — it just isn't in the listed ring. For that case we walk the full array
+ * outward from its position to find the nearest listed project on either side,
+ * which keeps the footer pointing at the same places a reader would have
+ * arrived from. Returns nulls only when nothing is listed at all.
+ */
+export function projectNeighbors(slug: string): {
+  prev: Project | null;
+  next: Project | null;
+} {
+  if (listedProjects.length === 0) return { prev: null, next: null };
+
+  const listedIndex = listedProjects.findIndex((p) => p.slug === slug);
+  if (listedIndex !== -1) {
+    const { length } = listedProjects;
+    return {
+      prev: listedProjects[(listedIndex - 1 + length) % length],
+      next: listedProjects[(listedIndex + 1) % length],
+    };
+  }
+
+  // Unlisted (or unknown): scan outward from its slot in the full array.
+  const fullIndex = projects.findIndex((p) => p.slug === slug);
+  if (fullIndex === -1) return { prev: null, next: null };
+
+  const { length } = projects;
+  const nearest = (step: -1 | 1): Project | null => {
+    for (let i = 1; i <= length; i++) {
+      // Double modulo so a negative step wraps to the end rather than to NaN.
+      const at = (((fullIndex + step * i) % length) + length) % length;
+      if (!projects[at].unlisted) return projects[at];
+    }
+    return null;
+  };
+  return { prev: nearest(-1), next: nearest(1) };
+}

@@ -39,6 +39,12 @@ export default function MediaWell({ media, title, fill = false }: MediaWellProps
     );
   }
 
+  // `contain` letterboxes rather than crops, for assets whose aspect is far
+  // from the well's 16:9 — portrait captures, posters. The frame's own
+  // `bg-surface` shows through as the bars. YouTube embeds are excluded: the
+  // iframe is sized to cover by construction.
+  const objectFit = media.fit === 'contain' ? 'object-contain' : 'object-cover';
+
   if (media.type === 'image') {
     return (
       <div className={frame}>
@@ -47,7 +53,7 @@ export default function MediaWell({ media, title, fill = false }: MediaWellProps
           alt={`${title} preview`}
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover"
+          className={`h-full w-full ${objectFit}`}
         />
       </div>
     );
@@ -64,7 +70,7 @@ export default function MediaWell({ media, title, fill = false }: MediaWellProps
             alt={`${title} preview`}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className={`h-full w-full ${objectFit}`}
           />
         </div>
       );
@@ -119,7 +125,7 @@ export default function MediaWell({ media, title, fill = false }: MediaWellProps
             alt={`${title} preview`}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className={`h-full w-full ${objectFit}`}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted">
@@ -133,7 +139,7 @@ export default function MediaWell({ media, title, fill = false }: MediaWellProps
   return (
     <div className={frame}>
       <video
-        className="h-full w-full object-cover"
+        className={`h-full w-full ${objectFit}`}
         autoPlay
         muted
         loop

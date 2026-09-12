@@ -2,7 +2,7 @@ import { ArrowDown } from 'lucide-react';
 import Footer from '../components/Footer';
 import ProjectCard from '../components/ProjectCard';
 import Seo from '../components/Seo';
-import { projects } from '../data/projects';
+import { listedProjects } from '../data/projects';
 
 /** Shared horizontal track. Wider than the reading column the detail pages use,
  *  because the project grid needs room for two cards side by side. */
@@ -52,7 +52,7 @@ export default function Home() {
           </h2>
 
           <ul className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {projects.map((project, i) => (
+            {listedProjects.map((project, i) => (
               <li key={project.slug} className="h-full">
                 {/* Even indices land in the left column at `lg`, so their media
                     panel goes left; odd indices mirror. */}

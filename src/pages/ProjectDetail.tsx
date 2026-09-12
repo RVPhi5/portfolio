@@ -7,7 +7,7 @@ import MediaWell from '../components/MediaWell';
 import TagPill from '../components/TagPill';
 import Seo from '../components/Seo';
 import NotFound from './NotFound';
-import { projects } from '../data/projects';
+import { projectNeighbors, projects } from '../data/projects';
 
 const linkIcons = {
   github: Github,
@@ -28,9 +28,9 @@ export default function ProjectDetail() {
     return <NotFound />;
   }
 
-  // Wrap-around prev/next.
-  const prev = projects[(index - 1 + projects.length) % projects.length];
-  const next = projects[(index + 1) % projects.length];
+  // Wrap-around prev/next over LISTED projects only, so the footer never
+  // links into an un-featured page. Null only if nothing is listed.
+  const { prev, next } = projectNeighbors(project.slug);
 
   return (
     <>
@@ -144,47 +144,58 @@ export default function ProjectDetail() {
             </aside>
           </div>
 
-          {/* Prev/next footer */}
-          <nav
-            className="mt-16 flex items-stretch justify-between gap-4 border-t border-border pt-6"
-            aria-label="Project navigation"
-          >
-            <Link
-              to={`/projects/${prev.slug}`}
-              className="group flex min-w-0 flex-col items-start gap-1 text-left"
+          {/* Prev/next footer. Each side renders only when it has a target;
+              the empty <span> holds the other one's justify-between slot. */}
+          {(prev || next) && (
+            <nav
+              className="mt-16 flex items-stretch justify-between gap-4 border-t border-border pt-6"
+              aria-label="Project navigation"
             >
-              <span className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.06em] text-muted">
-                <ArrowLeft
-                  size={13}
-                  strokeWidth={1.75}
-                  aria-hidden="true"
-                  className="transition-transform duration-150 group-hover:-translate-x-[2px]"
-                />
-                Prev
-              </span>
-              <span className="text-[15px] font-medium text-primary transition-colors duration-150 group-hover:text-accent">
-                {prev.title}
-              </span>
-            </Link>
+              {prev ? (
+                <Link
+                  to={`/projects/${prev.slug}`}
+                  className="group flex min-w-0 flex-col items-start gap-1 text-left"
+                >
+                  <span className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.06em] text-muted">
+                    <ArrowLeft
+                      size={13}
+                      strokeWidth={1.75}
+                      aria-hidden="true"
+                      className="transition-transform duration-150 group-hover:-translate-x-[2px]"
+                    />
+                    Prev
+                  </span>
+                  <span className="text-[15px] font-medium text-primary transition-colors duration-150 group-hover:text-accent">
+                    {prev.title}
+                  </span>
+                </Link>
+              ) : (
+                <span aria-hidden="true" />
+              )}
 
-            <Link
-              to={`/projects/${next.slug}`}
-              className="group flex min-w-0 flex-col items-end gap-1 text-right"
-            >
-              <span className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.06em] text-muted">
-                Next
-                <ArrowRight
-                  size={13}
-                  strokeWidth={1.75}
-                  aria-hidden="true"
-                  className="transition-transform duration-150 group-hover:translate-x-[2px]"
-                />
-              </span>
-              <span className="text-[15px] font-medium text-primary transition-colors duration-150 group-hover:text-accent">
-                {next.title}
-              </span>
-            </Link>
-          </nav>
+              {next ? (
+                <Link
+                  to={`/projects/${next.slug}`}
+                  className="group flex min-w-0 flex-col items-end gap-1 text-right"
+                >
+                  <span className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.06em] text-muted">
+                    Next
+                    <ArrowRight
+                      size={13}
+                      strokeWidth={1.75}
+                      aria-hidden="true"
+                      className="transition-transform duration-150 group-hover:translate-x-[2px]"
+                    />
+                  </span>
+                  <span className="text-[15px] font-medium text-primary transition-colors duration-150 group-hover:text-accent">
+                    {next.title}
+                  </span>
+                </Link>
+              ) : (
+                <span aria-hidden="true" />
+              )}
+            </nav>
+          )}
 
           <Footer />
         </main>
