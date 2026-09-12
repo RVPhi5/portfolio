@@ -100,6 +100,10 @@ export const projects: Project[] = [
     // the ink and padded to an exact 16:9, so it fills the well at full width
     // with no crop and no letterboxing — hence no `fit` override.
     media: { type: 'image', src: '/media/tcp-ip-stack.png' },
+    // The homepage leads with the TCP state machine instead; portrait, so
+    // `contain`, and its background is recoloured to --color-surface (#141414)
+    // so the letterbox bars blend into the card rather than framing it.
+    cardMedia: { type: 'image', src: '/media/tcp-ip-states.png', fit: 'contain' },
     links: [
       // TODO: point at the real TCP/IP stack repository.
       { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },
