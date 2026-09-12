@@ -96,9 +96,10 @@ export const projects: Project[] = [
     tagline:
       'A from-scratch IPv4, TCP, and RIP implementation over UDP tunnels that interoperates with the course reference and moves 1 MB 2.28× faster.',
     // The 1 MB transfer-time chart from the write-up: the bimodal fast/stalled
-    // split, and the staircase the zero-window probe paced. ~2.5:1, so
-    // `contain` rather than a crop that would clip an axis.
-    media: { type: 'image', src: '/media/tcp-ip-stack.png', fit: 'contain' },
+    // split, and the staircase the zero-window probe paced. Cropped tight to
+    // the ink and padded to an exact 16:9, so it fills the well at full width
+    // with no crop and no letterboxing — hence no `fit` override.
+    media: { type: 'image', src: '/media/tcp-ip-stack.png' },
     links: [
       // TODO: point at the real TCP/IP stack repository.
       { label: 'View code', href: 'https://github.com/RVPhi5', icon: 'github' },
